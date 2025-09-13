@@ -1,0 +1,108 @@
+# Meeting Meter PHP Deployment Configuration
+# Copy this file to deploy.ini and customize for your environment
+
+[general]
+# Application name
+app_name = meeting_meter
+
+# Domain name for the application
+domain = meetingmeter.example.com
+
+# Web server root directory
+web_root = /var/www/html
+
+# Application directory (relative to web_root)
+app_dir = meeting_meter
+
+# Backup directory for rollbacks
+backup_dir = /tmp/meeting_meter_backup
+
+[apache]
+# Apache configuration file path
+config_file = /etc/apache2/sites-available/meeting-meter.conf
+
+# Apache site name
+site_name = meeting-meter
+
+# Enable security headers
+security_headers = true
+
+# Enable rate limiting
+rate_limiting = true
+
+# Rate limit requests per minute
+rate_limit = 400
+
+[nginx]
+# Nginx configuration file path
+config_file = /etc/nginx/sites-available/meeting-meter
+
+# Nginx site name
+site_name = meeting-meter
+
+[security]
+# Secure configuration directory (outside web root)
+secure_config_dir = /etc/meeting_meter
+
+# Log directory
+log_dir = /var/log/meeting_meter
+
+# Configuration file permissions
+config_permissions = 600
+
+# Directory permissions
+dir_permissions = 750
+
+[php]
+# Required PHP version
+min_php_version = 7.4
+
+# Required PHP extensions
+required_extensions = json,session,mbstring
+
+# PHP settings
+upload_max_filesize = 10M
+post_max_size = 10M
+max_execution_time = 30
+memory_limit = 128M
+session_gc_maxlifetime = 3600
+
+[ssl]
+# Enable SSL setup with Let's Encrypt
+enable_ssl = false
+
+# Email for Let's Encrypt registration
+ssl_email = webmaster@example.com
+
+# Additional domains for SSL
+ssl_alt_domains = www.meetingmeter.example.com
+
+[systemd]
+# Enable systemd service
+enable_service = true
+
+# Service file path
+service_file = /etc/systemd/system/meeting-meter.service
+
+# Environment file path
+env_file = /etc/default/meeting-meter
+
+[logrotate]
+# Enable log rotation
+enable_logrotate = true
+
+# Log rotation config file
+logrotate_file = /etc/logrotate.d/meeting-meter
+
+# Log retention days
+log_retention_days = 52
+
+[backup]
+# Enable backup before deployment
+enable_backup = true
+
+# Backup retention days
+backup_retention_days = 7
+
+# Backup compression
+compress_backup = true

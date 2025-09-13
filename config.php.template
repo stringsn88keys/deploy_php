@@ -1,0 +1,216 @@
+<?php
+/**
+ * Meeting Meter Configuration Template
+ * This file contains configuration variables that can be customized
+ * during deployment. The deploy script will prompt for these values
+ * and generate the final config.php file.
+ */
+
+// =============================================================================
+// API CONFIGURATION
+// =============================================================================
+
+// Alpha Vantage API Key for real-time stock data
+// Get your free API key at: https://www.alphavantage.co/support/#api-key
+// Leave as 'demo' to use mock data for testing
+define('ALPHA_VANTAGE_API_KEY', '{{ALPHA_VANTAGE_API_KEY}}');
+
+// Alpha Vantage API Base URL
+define('ALPHA_VANTAGE_BASE_URL', 'https://www.alphavantage.co/query');
+
+// =============================================================================
+// APPLICATION SETTINGS
+// =============================================================================
+
+// Application name
+define('APP_NAME', '{{APP_NAME}}');
+
+// Application version
+define('APP_VERSION', '2.0.0');
+
+// Debug mode (set to false in production)
+define('DEBUG_MODE', {{DEBUG_MODE}});
+
+// Default timezone
+define('DEFAULT_TIMEZONE', '{{DEFAULT_TIMEZONE}}');
+
+// =============================================================================
+// SECURITY SETTINGS
+// =============================================================================
+
+// Enable logging
+define('LOG_ENABLED', {{LOG_ENABLED}});
+
+// Log file path (will be set by deploy script)
+define('LOG_FILE', '{{LOG_FILE}}');
+
+// Session configuration
+define('SESSION_LIFETIME', {{SESSION_LIFETIME}});
+
+// CSRF protection
+define('CSRF_PROTECTION', {{CSRF_PROTECTION}});
+
+// =============================================================================
+// UI CONFIGURATION
+// =============================================================================
+
+// Default hourly rate for calculations
+define('DEFAULT_HOURLY_RATE', {{DEFAULT_HOURLY_RATE}});
+
+// Currency symbol
+define('CURRENCY_SYMBOL', '{{CURRENCY_SYMBOL}}');
+
+// Date format
+define('DATE_FORMAT', '{{DATE_FORMAT}}');
+
+// Time format
+define('TIME_FORMAT', '{{TIME_FORMAT}}');
+
+// =============================================================================
+// STOCK ANALYSIS SETTINGS
+// =============================================================================
+
+// Enable stock analysis features
+define('STOCK_ANALYSIS_ENABLED', {{STOCK_ANALYSIS_ENABLED}});
+
+// Default P/E ratio for calculations
+define('DEFAULT_PE_RATIO', {{DEFAULT_PE_RATIO}});
+
+// Cache duration for stock data (in seconds)
+define('STOCK_CACHE_DURATION', {{STOCK_CACHE_DURATION}});
+
+// =============================================================================
+// EXPORT SETTINGS
+// =============================================================================
+
+// Enable PDF export
+define('PDF_EXPORT_ENABLED', {{PDF_EXPORT_ENABLED}});
+
+// Enable CSV export
+define('CSV_EXPORT_ENABLED', {{CSV_EXPORT_ENABLED}});
+
+// Export file retention (in days)
+define('EXPORT_RETENTION_DAYS', {{EXPORT_RETENTION_DAYS}});
+
+// =============================================================================
+// PERFORMANCE SETTINGS
+// =============================================================================
+
+// Enable caching
+define('CACHE_ENABLED', {{CACHE_ENABLED}});
+
+// Cache directory
+define('CACHE_DIR', '{{CACHE_DIR}}');
+
+// Maximum execution time for scripts
+define('MAX_EXECUTION_TIME', {{MAX_EXECUTION_TIME}});
+
+// Memory limit
+define('MEMORY_LIMIT', '{{MEMORY_LIMIT}}');
+
+// =============================================================================
+// EMAIL SETTINGS (Optional)
+// =============================================================================
+
+// Enable email notifications
+define('EMAIL_ENABLED', {{EMAIL_ENABLED}});
+
+// SMTP server
+define('SMTP_HOST', '{{SMTP_HOST}}');
+
+// SMTP port
+define('SMTP_PORT', {{SMTP_PORT}});
+
+// SMTP username
+define('SMTP_USERNAME', '{{SMTP_USERNAME}}');
+
+// SMTP password
+define('SMTP_PASSWORD', '{{SMTP_PASSWORD}}');
+
+// From email address
+define('FROM_EMAIL', '{{FROM_EMAIL}}');
+
+// =============================================================================
+// DEPLOYMENT INFO
+// =============================================================================
+
+// Deployment timestamp
+define('DEPLOYMENT_TIMESTAMP', '{{DEPLOYMENT_TIMESTAMP}}');
+
+// Deployment environment
+define('DEPLOYMENT_ENV', '{{DEPLOYMENT_ENV}}');
+
+// Server information
+define('SERVER_NAME', '{{SERVER_NAME}}');
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Get configuration value with default fallback
+ */
+function get_config($key, $default = null) {
+    if (defined($key)) {
+        return constant($key);
+    }
+    return $default;
+}
+
+/**
+ * Check if feature is enabled
+ */
+function is_feature_enabled($feature) {
+    $features = [
+        'debug' => DEBUG_MODE,
+        'logging' => LOG_ENABLED,
+        'stock_analysis' => STOCK_ANALYSIS_ENABLED,
+        'pdf_export' => PDF_EXPORT_ENABLED,
+        'csv_export' => CSV_EXPORT_ENABLED,
+        'caching' => CACHE_ENABLED,
+        'email' => EMAIL_ENABLED
+    ];
+    
+    return isset($features[$feature]) ? $features[$feature] : false;
+}
+
+/**
+ * Log message if logging is enabled
+ */
+function log_message($message, $level = 'INFO') {
+    if (LOG_ENABLED && defined('LOG_FILE')) {
+        $timestamp = date('Y-m-d H:i:s');
+        $log_entry = "[$timestamp] [$level] $message" . PHP_EOL;
+        error_log($log_entry, 3, LOG_FILE);
+    }
+}
+
+/**
+ * Get application information
+ */
+function get_app_info() {
+    return [
+        'name' => APP_NAME,
+        'version' => APP_VERSION,
+        'environment' => DEPLOYMENT_ENV,
+        'server' => SERVER_NAME,
+        'deployed' => DEPLOYMENT_TIMESTAMP,
+        'debug' => DEBUG_MODE,
+        'features' => [
+            'stock_analysis' => STOCK_ANALYSIS_ENABLED,
+            'pdf_export' => PDF_EXPORT_ENABLED,
+            'csv_export' => CSV_EXPORT_ENABLED,
+            'email' => EMAIL_ENABLED
+        ]
+    ];
+}
+
+// Set timezone
+if (defined('DEFAULT_TIMEZONE')) {
+    date_default_timezone_set(DEFAULT_TIMEZONE);
+}
+
+// Log deployment
+log_message("Meeting Meter application started - " . APP_NAME . " v" . APP_VERSION);
+
+?>
