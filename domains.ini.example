@@ -1,0 +1,82 @@
+# Meeting Meter Multi-Domain Configuration
+# This file defines multiple domain configurations for the Meeting Meter application
+# Copy this file to domains.ini and customize for your domains
+
+# Example domain configurations
+[meetingmeter.example.com]
+# Domain-specific settings
+domain = meetingmeter.example.com
+app_name = meeting_meter
+web_root = /var/www/html
+app_dir = meeting_meter
+
+# Source directory (relative to deploy_php directory)
+source_dir = ../meeting_meter
+
+# Apache configuration
+apache_config_file = /etc/apache2/sites-available/meeting-meter.conf
+apache_site_name = meeting-meter
+
+# Security settings
+secure_config_dir = /etc/meeting_meter
+log_dir = /var/log/meeting_meter
+
+# SSL settings
+enable_ssl = false
+ssl_email = webmaster@meetingmeter.example.com
+ssl_alt_domains = www.meetingmeter.example.com
+
+# Backup settings
+backup_dir = /tmp/meeting_meter_backup
+
+[meetingmeter2.example.com]
+# Second domain configuration
+domain = meetingmeter2.example.com
+app_name = meeting_meter_2
+web_root = /var/www/html
+app_dir = meeting_meter_2
+
+# Source directory (relative to deploy_php directory)
+source_dir = ../meeting_meter_v2
+
+# Apache configuration
+apache_config_file = /etc/apache2/sites-available/meeting-meter-2.conf
+apache_site_name = meeting-meter-2
+
+# Security settings
+secure_config_dir = /etc/meeting_meter_2
+log_dir = /var/log/meeting_meter_2
+
+# SSL settings
+enable_ssl = false
+ssl_email = webmaster@meetingmeter2.example.com
+ssl_alt_domains = www.meetingmeter2.example.com
+
+# Backup settings
+backup_dir = /tmp/meeting_meter_2_backup
+
+[meetingmeter3.example.com]
+# Third domain configuration
+domain = meetingmeter3.example.com
+app_name = meeting_meter_3
+web_root = /var/www/html
+app_dir = meeting_meter_3
+
+# Source directory (relative to deploy_php directory)
+source_dir = ../meeting_meter_custom
+
+# Apache configuration
+apache_config_file = /etc/apache2/sites-available/meeting-meter-3.conf
+apache_site_name = meeting-meter-3
+
+# Security settings
+secure_config_dir = /etc/meeting_meter_3
+log_dir = /var/log/meeting_meter_3
+
+# SSL settings
+enable_ssl = false
+ssl_email = webmaster@meetingmeter3.example.com
+ssl_alt_domains = www.meetingmeter3.example.com
+
+# Backup settings
+backup_dir = /tmp/meeting_meter_3_backup

@@ -5,8 +5,8 @@
 # Application name
 app_name = meeting_meter
 
-# Domain name for the application
-domain = meetingmeter.example.com
+# Default domain name for the application (used when no specific domain is selected)
+default_domain = meetingmeter.example.com
 
 # Web server root directory
 web_root = /var/www/html
@@ -16,6 +16,12 @@ app_dir = meeting_meter
 
 # Backup directory for rollbacks
 backup_dir = /tmp/meeting_meter_backup
+
+# Enable multi-domain support
+multi_domain_enabled = true
+
+# Domains configuration file
+domains_config = domains.ini
 
 [apache]
 # Apache configuration file path
