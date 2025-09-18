@@ -39,10 +39,23 @@ This directory contains deployment scripts and configuration templates for the M
 
 ### Creating Configuration
 
-The deployment system uses a `deploy.ini` file for configuration. You can create this file in two ways:
+The deployment system supports two deployment modes:
+
+#### Single Domain Mode (Simple)
+- Deploy one application to one domain
+- All configuration in `deploy.ini`
+- Copy `deploy.ini.example` to `deploy.ini` and set `multi_domain_enabled = false`
+
+#### Multi-Domain Mode (Advanced)
+- Deploy multiple applications to multiple domains
+- Domain-specific configuration in `domains.ini`
+- Copy `deploy.multi-domain.ini.example` to `deploy.ini` and set `multi_domain_enabled = true`
+- Use `./manage_domains.sh` to manage domain configurations
+
+You can create configuration files in two ways:
 
 1. **Interactive Mode**: Run `./deploy.sh --interactive` to be prompted for settings
-2. **Manual Creation**: Copy `deploy.ini.example` to `deploy.ini` and edit the values
+2. **Manual Creation**: Copy the appropriate example file to `deploy.ini` and edit the values
 
 ### Configuration Sections
 
@@ -50,21 +63,25 @@ The `deploy.ini` file is organized into sections:
 
 #### `[general]`
 - `app_name` - Application name
-- `domain` - Domain name for the application
+- `multi_domain_enabled` - Enable multi-domain mode (true/false)
+- `domain` - Domain name (single domain mode)
+- `default_domain` - Default domain (multi-domain mode)
 - `web_root` - Web server root directory
-- `app_dir` - Application directory (relative to web_root)
+- `app_dir` - Application directory (single domain mode)
+- `source_dir` - Source code directory (single domain mode)
 - `backup_dir` - Backup directory for rollbacks
+- `domains_config` - Domains configuration file (multi-domain mode)
 
 #### `[apache]`
-- `config_file` - Apache configuration file path
-- `site_name` - Apache site name
+- `apache_config_file` - Apache configuration file path
+- `apache_site_name` - Apache site name
 - `security_headers` - Enable security headers
 - `rate_limiting` - Enable rate limiting
 - `rate_limit` - Rate limit requests per minute
 
 #### `[nginx]`
-- `config_file` - Nginx configuration file path
-- `site_name` - Nginx site name
+- `nginx_config_file` - Nginx configuration file path
+- `nginx_site_name` - Nginx site name
 
 #### `[security]`
 - `secure_config_dir` - Secure configuration directory (outside web root)

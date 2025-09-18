@@ -1,0 +1,79 @@
+# Meeting Meter PHP Multi-Domain Deployment Configuration Example
+# Copy this file to deploy.ini for multi-domain deployment setup
+#
+# This example shows a multi-domain configuration that uses domains.ini
+# for domain-specific settings.
+
+[general]
+# Application name (used as default for domains without specific app_name)
+app_name = meeting_meter
+
+# Multi-domain support configuration
+# Set to 'true' to use domains.ini for multiple domain configurations
+multi_domain_enabled = true
+
+# Multi-Domain Mode Settings
+# Default domain name (used when no specific domain is selected)
+default_domain = meetingmeter.example.com
+
+# Default web server root directory (used as fallback)
+web_root = /var/www/html
+
+# Default backup directory (used as fallback)
+backup_dir = /tmp/meeting_meter_backup
+
+# Domains configuration file
+domains_config = domains.ini
+
+[apache]
+# Default Apache settings (used as fallback for domains without specific settings)
+apache_config_file = /etc/apache2/sites-available/meeting-meter.conf
+apache_site_name = meeting-meter
+security_headers = true
+rate_limiting = true
+rate_limit = 400
+
+[nginx]
+# Default Nginx settings (used as fallback for domains without specific settings)
+nginx_config_file = /etc/nginx/sites-available/meeting-meter
+nginx_site_name = meeting-meter
+
+[security]
+# Default security settings (used as fallback)
+secure_config_dir = /etc/meeting_meter
+log_dir = /var/log/meeting_meter
+config_permissions = 600
+dir_permissions = 750
+
+[php]
+# PHP requirements and settings (applied to all domains)
+min_php_version = 7.4
+required_extensions = json,session,mbstring
+upload_max_filesize = 10M
+post_max_size = 10M
+max_execution_time = 30
+memory_limit = 128M
+session_gc_maxlifetime = 3600
+
+[ssl]
+# Default SSL settings (used as fallback)
+enable_ssl = false
+ssl_email = webmaster@example.com
+
+[systemd]
+# Systemd service settings (applied globally)
+enable_service = true
+service_file = /etc/systemd/system/meeting-meter.service
+env_file = /etc/default/meeting-meter
+
+[logrotate]
+# Log rotation settings (applied globally)
+enable_logrotate = true
+logrotate_file = /etc/logrotate.d/meeting-meter
+log_retention_days = 52
+
+[backup]
+# Backup settings (applied globally)
+enable_backup = true
+backup_retention_days = 7
+compress_backup = true

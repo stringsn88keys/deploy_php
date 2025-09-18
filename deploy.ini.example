@@ -1,12 +1,31 @@
 # Meeting Meter PHP Deployment Configuration
 # Copy this file to deploy.ini and customize for your environment
+#
+# This configuration supports two deployment modes:
+#
+# 1. SINGLE DOMAIN MODE (multi_domain_enabled = false)
+#    - Deploy to one domain using settings in this file
+#    - Simple setup for single application deployment
+#    - Use the domain, web_root, app_dir, etc. settings below
+#
+# 2. MULTI-DOMAIN MODE (multi_domain_enabled = true)
+#    - Deploy to multiple domains using domains.ini file
+#    - Each domain has its own configuration in domains.ini
+#    - Settings below are used as defaults/fallbacks
+#    - Run: ./manage_domains.sh to manage domain configurations
 
 [general]
-# Application name
+# Application name (used for single domain mode or as default)
 app_name = meeting_meter
 
-# Default domain name for the application (used when no specific domain is selected)
-default_domain = meetingmeter.example.com
+# Multi-domain support configuration
+# Set to 'true' to use domains.ini for multiple domain configurations
+# Set to 'false' to use single domain mode with settings below
+multi_domain_enabled = false
+
+# Single Domain Mode Settings (used when multi_domain_enabled = false)
+# Domain name for single domain deployment
+domain = meetingmeter.example.com
 
 # Web server root directory
 web_root = /var/www/html
@@ -14,21 +33,25 @@ web_root = /var/www/html
 # Application directory (relative to web_root)
 app_dir = meeting_meter
 
+# Source directory (relative to deploy_php directory)
+source_dir = ../meeting_meter
+
 # Backup directory for rollbacks
 backup_dir = /tmp/meeting_meter_backup
 
-# Enable multi-domain support
-multi_domain_enabled = true
+# Multi-Domain Mode Settings (used when multi_domain_enabled = true)
+# Default domain name (used when no specific domain is selected)
+default_domain = meetingmeter.example.com
 
 # Domains configuration file
 domains_config = domains.ini
 
 [apache]
-# Apache configuration file path
-config_file = /etc/apache2/sites-available/meeting-meter.conf
+# Apache configuration file path (used in single domain mode)
+apache_config_file = /etc/apache2/sites-available/meeting-meter.conf
 
-# Apache site name
-site_name = meeting-meter
+# Apache site name (used in single domain mode)
+apache_site_name = meeting-meter
 
 # Enable security headers
 security_headers = true
@@ -40,17 +63,17 @@ rate_limiting = true
 rate_limit = 400
 
 [nginx]
-# Nginx configuration file path
-config_file = /etc/nginx/sites-available/meeting-meter
+# Nginx configuration file path (used in single domain mode)
+nginx_config_file = /etc/nginx/sites-available/meeting-meter
 
-# Nginx site name
-site_name = meeting-meter
+# Nginx site name (used in single domain mode)
+nginx_site_name = meeting-meter
 
 [security]
-# Secure configuration directory (outside web root)
+# Secure configuration directory (outside web root) - used in single domain mode
 secure_config_dir = /etc/meeting_meter
 
-# Log directory
+# Log directory - used in single domain mode
 log_dir = /var/log/meeting_meter
 
 # Configuration file permissions
@@ -74,13 +97,13 @@ memory_limit = 128M
 session_gc_maxlifetime = 3600
 
 [ssl]
-# Enable SSL setup with Let's Encrypt
+# Enable SSL setup with Let's Encrypt (used in single domain mode)
 enable_ssl = false
 
-# Email for Let's Encrypt registration
-ssl_email = webmaster@example.com
+# Email for Let's Encrypt registration (used in single domain mode)
+ssl_email = webmaster@meetingmeter.example.com
 
-# Additional domains for SSL
+# Additional domains for SSL (used in single domain mode)
 ssl_alt_domains = www.meetingmeter.example.com
 
 [systemd]

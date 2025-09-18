@@ -109,23 +109,31 @@ case $choice in
         ./manage_domains.sh
         ;;
     5)
-        echo -e "${BLUE}=== Configuration Example ===${NC}"
+        echo -e "${BLUE}=== Configuration Examples ===${NC}"
         echo
-        echo "Here's an example of a deploy.ini configuration with multi-domain support:"
+        echo "The deployment system supports two modes:"
+        echo
+        echo -e "${YELLOW}1. Single Domain Mode (simple)${NC}"
+        echo "   - One application, one domain"
+        echo "   - All settings in deploy.ini"
+        echo "   - Set multi_domain_enabled = false"
+        echo
+        echo -e "${YELLOW}2. Multi-Domain Mode (advanced)${NC}"
+        echo "   - Multiple applications, multiple domains"
+        echo "   - Domain-specific settings in domains.ini"
+        echo "   - Set multi_domain_enabled = true"
+        echo
+        echo "Here's an example of a single domain deploy.ini configuration:"
         echo
         cat << 'EOF'
 [general]
 app_name = meeting_meter
-default_domain = meetingmeter.example.com
+multi_domain_enabled = false
+domain = meetingmeter.example.com
 web_root = /var/www/html
 app_dir = meeting_meter
+source_dir = ../meeting_meter
 backup_dir = /tmp/meeting_meter_backup
-
-# Enable multi-domain support
-multi_domain_enabled = true
-
-# Domains configuration file
-domains_config = domains.ini
 
 [apache]
 config_file = /etc/apache2/sites-available/meeting-meter.conf
@@ -174,7 +182,7 @@ backup_retention_days = 7
 compress_backup = true
 EOF
         echo
-        echo "And here's an example of a domains.ini configuration:"
+        echo "For multi-domain mode, set multi_domain_enabled = true and create domains.ini:"
         echo
         cat << 'EOF'
 # Meeting Meter Multi-Domain Configuration
