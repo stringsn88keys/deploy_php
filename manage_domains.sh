@@ -38,7 +38,24 @@ print_error() {
 # Load configuration
 load_config() {
     if [ -f "$CONFIG_FILE" ]; then
-        source <(grep -v '^#' "$CONFIG_FILE" | grep -v '^$' | sed 's/^\[\(.*\)\]/\1=/')
+        # Parse INI file properly, skipping section headers
+        while IFS='=' read -r key value; do
+            # Skip empty lines and comments
+            [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+            
+            # Skip section headers
+            [[ "$key" =~ ^\[.*\]$ ]] && continue
+            
+            # Clean up key and value
+            key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            value=$(echo "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            
+            # Skip empty keys
+            [[ -z "$key" ]] && continue
+            
+            # Export the variable
+            export "$key"="$value"
+        done < "$CONFIG_FILE"
     else
         print_error "Configuration file not found: $CONFIG_FILE"
         echo "Please run ./deploy.sh --interactive first to create configuration"

@@ -97,7 +97,24 @@ print_status "Testing configuration file parsing..."
 
 if [ -f "deploy.ini.example" ]; then
     # Test if we can parse the configuration
-    if source <(grep -v '^#' "deploy.ini.example" | grep -v '^$' | sed 's/^\[\(.*\)\]/\1=/') 2>/dev/null; then
+    # Parse INI file properly, skipping section headers
+    if { while IFS='=' read -r key value; do
+        # Skip empty lines and comments
+        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        
+        # Skip section headers
+        [[ "$key" =~ ^\[.*\]$ ]] && continue
+        
+        # Clean up key and value
+        key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        value=$(echo "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        # Skip empty keys
+        [[ -z "$key" ]] && continue
+        
+        # Export the variable
+        export "$key"="$value"
+    done < "deploy.ini.example"; } 2>/dev/null; then
         print_status "✓ Configuration file parsing works"
     else
         print_error "✗ Configuration file parsing failed"
@@ -178,7 +195,24 @@ log_dir = /tmp/test_logs
 EOF
 
 # Test if we can load the config
-if source <(grep -v '^#' "$TEMP_CONFIG" | grep -v '^$' | sed 's/^\[\(.*\)\]/\1=/') 2>/dev/null; then
+# Parse INI file properly, skipping section headers
+if { while IFS='=' read -r key value; do
+    # Skip empty lines and comments
+    [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+    
+    # Skip section headers
+    [[ "$key" =~ ^\[.*\]$ ]] && continue
+    
+    # Clean up key and value
+    key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    value=$(echo "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    
+    # Skip empty keys
+    [[ -z "$key" ]] && continue
+    
+    # Export the variable
+    export "$key"="$value"
+done < "$TEMP_CONFIG"; } 2>/dev/null; then
     print_status "✓ Configuration loading works"
 else
     print_error "✗ Configuration loading failed"

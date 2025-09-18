@@ -39,7 +39,25 @@ fi
 # Load configuration
 if [ -f "$CONFIG_FILE" ]; then
     echo -e "${GREEN}Loading configuration from: $CONFIG_FILE${NC}"
-    source <(grep -v '^#' "$CONFIG_FILE" | grep -v '^$' | sed 's/^\[\(.*\)\]/\1=/')
+    
+    # Parse INI file properly, skipping section headers
+    while IFS='=' read -r key value; do
+        # Skip empty lines and comments
+        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        
+        # Skip section headers
+        [[ "$key" =~ ^\[.*\]$ ]] && continue
+        
+        # Clean up key and value
+        key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        value=$(echo "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        # Skip empty keys
+        [[ -z "$key" ]] && continue
+        
+        # Export the variable
+        export "$key"="$value"
+    done < "$CONFIG_FILE"
 else
     echo -e "${RED}Configuration file not found: $CONFIG_FILE${NC}"
     echo "Please run ./deploy.sh --interactive first to create configuration"
