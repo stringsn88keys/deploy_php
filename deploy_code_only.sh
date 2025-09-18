@@ -147,10 +147,19 @@ load_domain_config() {
     
     # Extract domain-specific configuration
     DOMAIN_SECTION="[$SELECTED_DOMAIN]"
-    DOMAIN_CONFIG=$(awk "/^$DOMAIN_SECTION$/,/^\[/" "$DOMAINS_CONFIG_FILE" | grep -v "^$DOMAIN_SECTION$" | grep -v "^\[" | grep -v "^$")
+    # Use awk to extract the section content safely
+    DOMAIN_CONFIG=$(awk -v section="$SELECTED_DOMAIN" '
+        /^\[/ { 
+            gsub(/[[:space:]]+$/, "", $0)  # Remove trailing spaces
+            in_section = ($0 == "[" section "]") 
+        }
+        in_section && !/^\[/ && NF > 0 { print }
+    ' "$DOMAINS_CONFIG_FILE")
     
     if [ -z "$DOMAIN_CONFIG" ]; then
         echo -e "${RED}Configuration for domain $SELECTED_DOMAIN not found${NC}"
+        echo -e "${YELLOW}Available sections in domains.ini:${NC}"
+        grep -E '^\[.*\]$' "$DOMAINS_CONFIG_FILE" || echo "No sections found"
         return 1
     fi
     
@@ -160,7 +169,7 @@ load_domain_config() {
             # Remove leading/trailing whitespace
             key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             value=$(echo "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            eval "$key=\"$value\""
+            export "$key"="$value"
         fi
     done <<< "$DOMAIN_CONFIG"
     

@@ -86,7 +86,14 @@ list_domains() {
         
         # Show domain details
         DOMAIN_SECTION="[${DOMAINS[i]}]"
-        DOMAIN_CONFIG=$(awk "/^$DOMAIN_SECTION$/,/^\[/" "$DOMAINS_CONFIG_FILE" | grep -v "^$DOMAIN_SECTION$" | grep -v "^\[" | grep -v "^$")
+        # Use awk to extract the section content safely
+        DOMAIN_CONFIG=$(awk -v section="${DOMAINS[i]}" '
+            /^\[/ { 
+                gsub(/[[:space:]]+$/, "", $0)  # Remove trailing spaces
+                in_section = ($0 == "[" section "]") 
+            }
+            in_section && !/^\[/ && NF > 0 { print }
+        ' "$DOMAINS_CONFIG_FILE")
         
         while IFS='=' read -r key value; do
             if [ -n "$key" ] && [ -n "$value" ]; then
@@ -297,7 +304,14 @@ validate_domains() {
         echo -e "${YELLOW}Validating domain: $domain${NC}"
         
         DOMAIN_SECTION="[$domain]"
-        DOMAIN_CONFIG=$(awk "/^$DOMAIN_SECTION$/,/^\[/" "$DOMAINS_CONFIG_FILE" | grep -v "^$DOMAIN_SECTION$" | grep -v "^\[" | grep -v "^$")
+        # Use awk to extract the section content safely
+        DOMAIN_CONFIG=$(awk -v section="$domain" '
+            /^\[/ { 
+                gsub(/[[:space:]]+$/, "", $0)  # Remove trailing spaces
+                in_section = ($0 == "[" section "]") 
+            }
+            in_section && !/^\[/ && NF > 0 { print }
+        ' "$DOMAINS_CONFIG_FILE")
         
         # Check required fields
         REQUIRED_FIELDS=("domain" "app_name" "app_dir" "web_root")
