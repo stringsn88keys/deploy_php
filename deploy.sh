@@ -317,6 +317,27 @@ generate_config() {
         exit 1
     fi
     
+    # Create secure configuration directory if specified
+    if [ -n "$secure_config_dir" ] && [ "$secure_config_dir" != "$web_root/$app_dir" ]; then
+        print_status "Creating secure configuration directory: $secure_config_dir"
+        sudo mkdir -p "$secure_config_dir"
+        sudo chown www-data:www-data "$secure_config_dir"
+        sudo chmod 750 "$secure_config_dir"
+    fi
+    
+    # Create log directory if specified
+    if [ -n "$log_dir" ]; then
+        print_status "Creating log directory: $log_dir"
+        sudo mkdir -p "$log_dir"
+        sudo chown www-data:www-data "$log_dir"
+        sudo chmod 750 "$log_dir"
+        
+        # Create log file
+        sudo touch "$log_dir/app.log"
+        sudo chown www-data:www-data "$log_dir/app.log"
+        sudo chmod 640 "$log_dir/app.log"
+    fi
+    
     # Get current timestamp
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
     
@@ -361,7 +382,11 @@ generate_config() {
         -e "s/{{DEPLOYMENT_TIMESTAMP}}/$TIMESTAMP/g" \
         -e "s/{{DEPLOYMENT_ENV}}/production/g" \
         -e "s/{{SERVER_NAME}}/$(hostname)/g" \
-        "$SCRIPT_DIR/config.php.template" > "$web_root/$app_dir/config.php"
+        "$SCRIPT_DIR/config.php.template" | sudo tee "$web_root/$app_dir/config.php" > /dev/null
+    
+    # Set proper permissions for config file
+    sudo chown www-data:www-data "$web_root/$app_dir/config.php"
+    sudo chmod 644 "$web_root/$app_dir/config.php"
     
     print_status "Configuration file generated ✓"
 }
@@ -381,8 +406,11 @@ create_backup() {
 deploy_app() {
     print_status "Deploying $app_name..."
     
-    # Create application directory
-    mkdir -p "$web_root/$app_dir"
+    # Create application directory with proper permissions
+    print_status "Creating application directory: $web_root/$app_dir"
+    sudo mkdir -p "$web_root/$app_dir"
+    sudo chown www-data:www-data "$web_root/$app_dir"
+    sudo chmod 755 "$web_root/$app_dir"
     
     # Determine source directory
     if [ -n "$source_dir" ]; then
@@ -402,8 +430,8 @@ deploy_app() {
     
     # Copy application files
     if [ -f "$SOURCE_DIR/index.php" ]; then
-        cp "$SOURCE_DIR/"*.php "$web_root/$app_dir/"
-        cp "$SOURCE_DIR/README.md" "$web_root/$app_dir/" 2>/dev/null || true
+        sudo cp "$SOURCE_DIR/"*.php "$web_root/$app_dir/"
+        sudo cp "$SOURCE_DIR/README.md" "$web_root/$app_dir/" 2>/dev/null || true
         print_status "Application files copied from: $SOURCE_DIR"
     else
         print_error "Source files not found in: $SOURCE_DIR"
@@ -413,20 +441,22 @@ deploy_app() {
     
     # Copy .htaccess if it exists
     if [ -f "$SOURCE_DIR/.htaccess" ]; then
-        cp "$SOURCE_DIR/.htaccess" "$web_root/$app_dir/"
+        sudo cp "$SOURCE_DIR/.htaccess" "$web_root/$app_dir/"
         print_status ".htaccess copied"
     fi
     
     # Copy snippets.php if it exists
     if [ -f "$SOURCE_DIR/snippets.php" ]; then
-        cp "$SOURCE_DIR/snippets.php" "$web_root/$app_dir/"
+        sudo cp "$SOURCE_DIR/snippets.php" "$web_root/$app_dir/"
         print_status "snippets.php copied"
     fi
     
-    # Set proper permissions
-    chmod 644 "$web_root/$app_dir"/*.php
-    chmod 644 "$web_root/$app_dir"/*.md 2>/dev/null || true
-    chmod 644 "$web_root/$app_dir/.htaccess" 2>/dev/null || true
+    # Set proper permissions for application files
+    print_status "Setting file permissions..."
+    sudo chown www-data:www-data "$web_root/$app_dir"/*
+    sudo chmod 644 "$web_root/$app_dir"/*.php
+    sudo chmod 644 "$web_root/$app_dir"/*.md 2>/dev/null || true
+    sudo chmod 644 "$web_root/$app_dir/.htaccess" 2>/dev/null || true
     
     print_status "Application files deployed ✓"
 }
@@ -453,6 +483,7 @@ configure_apache() {
     VHOST_CONF="$apache_config_file"
     
     if [ ! -f "$VHOST_CONF" ]; then
+        print_status "Creating Apache virtual host configuration: $VHOST_CONF"
         sudo tee "$VHOST_CONF" > /dev/null <<EOF
 <VirtualHost *:80>
     ServerName $domain
@@ -462,6 +493,12 @@ configure_apache() {
     <Directory $web_root/$app_dir>
         AllowOverride All
         Require all granted
+        Options -Indexes +FollowSymLinks
+        
+        # Basic security headers
+        Header always set X-Content-Type-Options nosniff
+        Header always set X-Frame-Options DENY
+        Header always set X-XSS-Protection "1; mode=block"
     </Directory>
     
     ErrorLog \${APACHE_LOG_DIR}/${app_name}_error.log
@@ -469,12 +506,26 @@ configure_apache() {
 </VirtualHost>
 EOF
         print_status "Apache virtual host configuration created"
+        
+        # Set proper permissions for Apache config
+        sudo chmod 644 "$VHOST_CONF"
+        sudo chown root:root "$VHOST_CONF"
     fi
     
     # Enable site and required modules
-    sudo a2ensite "$apache_site_name"
-    sudo a2enmod rewrite headers expires deflate
-    sudo systemctl reload apache2
+    print_status "Enabling Apache site and modules..."
+    sudo a2ensite "$apache_site_name" 2>/dev/null || print_warning "Site may already be enabled"
+    sudo a2enmod rewrite headers expires deflate 2>/dev/null || true
+    
+    # Test Apache configuration
+    if sudo apache2ctl configtest; then
+        print_status "Apache configuration is valid"
+        sudo systemctl reload apache2
+        print_status "Apache reloaded successfully"
+    else
+        print_error "Apache configuration has errors"
+        exit 1
+    fi
     
     print_status "Apache configuration completed ✓"
 }
@@ -487,12 +538,18 @@ configure_nginx() {
     NGINX_CONF="$nginx_config_file"
     
     if [ ! -f "$NGINX_CONF" ]; then
+        print_status "Creating Nginx configuration: $NGINX_CONF"
         sudo tee "$NGINX_CONF" > /dev/null <<EOF
 server {
     listen 80;
     server_name $domain www.$domain;
     root $web_root/$app_dir;
     index index.php;
+    
+    # Basic security headers
+    add_header X-Content-Type-Options nosniff;
+    add_header X-Frame-Options DENY;
+    add_header X-XSS-Protection "1; mode=block";
     
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
@@ -506,14 +563,33 @@ server {
     location ~ /\.ht {
         deny all;
     }
+    
+    # Deny access to sensitive files
+    location ~ \.(log|sh|md)$ {
+        deny all;
+    }
 }
 EOF
         print_status "Nginx configuration created"
+        
+        # Set proper permissions for Nginx config
+        sudo chmod 644 "$NGINX_CONF"
+        sudo chown root:root "$NGINX_CONF"
     fi
     
     # Enable site
+    print_status "Enabling Nginx site..."
     sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
-    sudo nginx -t && sudo systemctl reload nginx
+    
+    # Test and reload Nginx
+    if sudo nginx -t; then
+        print_status "Nginx configuration is valid"
+        sudo systemctl reload nginx
+        print_status "Nginx reloaded successfully"
+    else
+        print_error "Nginx configuration has errors"
+        exit 1
+    fi
     
     print_status "Nginx configuration completed ✓"
 }
