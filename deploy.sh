@@ -500,23 +500,60 @@ configure_apache() {
         Header always set X-Frame-Options DENY
         Header always set X-XSS-Protection "1; mode=block"
         
-        # Proper MIME types for static files
+        # Prevent PHP processing of static files and set proper MIME types
         <FilesMatch "\.(css)$">
-            Header set Content-Type "text/css"
+            SetHandler none
+            ForceType text/css
         </FilesMatch>
         
         <FilesMatch "\.(js)$">
-            Header set Content-Type "application/javascript"
-        </FilesMatch>
-        
-        <FilesMatch "\.(png|jpg|jpeg|gif|svg)$">
-            Header set Content-Type "image/%{REQUEST_FILENAME}"
-        </FilesMatch>
-        
-        # Prevent PHP processing of static files
-        <FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$">
             SetHandler none
-            ForceType none
+            ForceType application/javascript
+        </FilesMatch>
+        
+        <FilesMatch "\.(png)$">
+            SetHandler none
+            ForceType image/png
+        </FilesMatch>
+        
+        <FilesMatch "\.(jpg|jpeg)$">
+            SetHandler none
+            ForceType image/jpeg
+        </FilesMatch>
+        
+        <FilesMatch "\.(gif)$">
+            SetHandler none
+            ForceType image/gif
+        </FilesMatch>
+        
+        <FilesMatch "\.(svg)$">
+            SetHandler none
+            ForceType image/svg+xml
+        </FilesMatch>
+        
+        <FilesMatch "\.(ico)$">
+            SetHandler none
+            ForceType image/x-icon
+        </FilesMatch>
+        
+        <FilesMatch "\.(woff)$">
+            SetHandler none
+            ForceType font/woff
+        </FilesMatch>
+        
+        <FilesMatch "\.(woff2)$">
+            SetHandler none
+            ForceType font/woff2
+        </FilesMatch>
+        
+        <FilesMatch "\.(ttf)$">
+            SetHandler none
+            ForceType font/ttf
+        </FilesMatch>
+        
+        <FilesMatch "\.(eot)$">
+            SetHandler none
+            ForceType application/vnd.ms-fontobject
         </FilesMatch>
     </Directory>
     

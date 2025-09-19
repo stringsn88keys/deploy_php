@@ -414,15 +414,33 @@ if [ "$APACHE_CONFIG_EXISTS" = false ]; then
         
         # Proper MIME types for static files
         <FilesMatch "\.(css)$">
-            Header set Content-Type "text/css"
+            SetHandler none
+            ForceType text/css
         </FilesMatch>
         
         <FilesMatch "\.(js)$">
-            Header set Content-Type "application/javascript"
+            SetHandler none
+            ForceType application/javascript
         </FilesMatch>
         
-        <FilesMatch "\.(png|jpg|jpeg|gif|svg)$">
-            Header set Content-Type "image/%{REQUEST_FILENAME}"
+        <FilesMatch "\.(png)$">
+            SetHandler none
+            ForceType image/png
+        </FilesMatch>
+        
+        <FilesMatch "\.(jpg|jpeg)$">
+            SetHandler none
+            ForceType image/jpeg
+        </FilesMatch>
+        
+        <FilesMatch "\.(gif)$">
+            SetHandler none
+            ForceType image/gif
+        </FilesMatch>
+        
+        <FilesMatch "\.(svg)$">
+            SetHandler none
+            ForceType image/svg+xml
         </FilesMatch>
         
         # Prevent PHP processing of static files
@@ -790,15 +808,33 @@ EOF
         
         # Proper MIME types for static files
         <FilesMatch "\.(css)$">
-            Header set Content-Type "text/css"
+            SetHandler none
+            ForceType text/css
         </FilesMatch>
         
         <FilesMatch "\.(js)$">
-            Header set Content-Type "application/javascript"
+            SetHandler none
+            ForceType application/javascript
         </FilesMatch>
         
-        <FilesMatch "\.(png|jpg|jpeg|gif|svg)$">
-            Header set Content-Type "image/%{REQUEST_FILENAME}"
+        <FilesMatch "\.(png)$">
+            SetHandler none
+            ForceType image/png
+        </FilesMatch>
+        
+        <FilesMatch "\.(jpg|jpeg)$">
+            SetHandler none
+            ForceType image/jpeg
+        </FilesMatch>
+        
+        <FilesMatch "\.(gif)$">
+            SetHandler none
+            ForceType image/gif
+        </FilesMatch>
+        
+        <FilesMatch "\.(svg)$">
+            SetHandler none
+            ForceType image/svg+xml
         </FilesMatch>
         
         # Prevent PHP processing of static files

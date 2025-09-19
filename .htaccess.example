@@ -4,19 +4,60 @@
 # Enable rewrite engine
 RewriteEngine On
 
-# Proper MIME types for static files
+# Prevent PHP processing of static files and set proper MIME types
 <FilesMatch "\.(css)$">
-    Header set Content-Type "text/css"
+    SetHandler none
+    ForceType text/css
 </FilesMatch>
 
 <FilesMatch "\.(js)$">
-    Header set Content-Type "application/javascript"
+    SetHandler none
+    ForceType application/javascript
 </FilesMatch>
 
-# Prevent PHP processing of static files
-<FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$">
+<FilesMatch "\.(png)$">
     SetHandler none
-    ForceType none
+    ForceType image/png
+</FilesMatch>
+
+<FilesMatch "\.(jpg|jpeg)$">
+    SetHandler none
+    ForceType image/jpeg
+</FilesMatch>
+
+<FilesMatch "\.(gif)$">
+    SetHandler none
+    ForceType image/gif
+</FilesMatch>
+
+<FilesMatch "\.(svg)$">
+    SetHandler none
+    ForceType image/svg+xml
+</FilesMatch>
+
+<FilesMatch "\.(ico)$">
+    SetHandler none
+    ForceType image/x-icon
+</FilesMatch>
+
+<FilesMatch "\.(woff)$">
+    SetHandler none
+    ForceType font/woff
+</FilesMatch>
+
+<FilesMatch "\.(woff2)$">
+    SetHandler none
+    ForceType font/woff2
+</FilesMatch>
+
+<FilesMatch "\.(ttf)$">
+    SetHandler none
+    ForceType font/ttf
+</FilesMatch>
+
+<FilesMatch "\.(eot)$">
+    SetHandler none
+    ForceType application/vnd.ms-fontobject
 </FilesMatch>
 
 # Security headers
