@@ -41,22 +41,42 @@ echo
 
 # Check if certificate exists
 CERT_PATH="/etc/letsencrypt/live/$DOMAIN"
-if [ -d "$CERT_PATH" ]; then
+if sudo test -d "$CERT_PATH"; then
     print_status "Certificate directory found: $CERT_PATH"
     
-    # Check certificate details
-    print_status "Certificate details:"
-    sudo openssl x509 -in "$CERT_PATH/fullchain.pem" -text -noout | grep -A 1 "Subject:"
-    echo
-    
-    print_status "Subject Alternative Names:"
-    sudo openssl x509 -in "$CERT_PATH/fullchain.pem" -text -noout | grep -A 1 "Subject Alternative Name:" || echo "No SAN found"
-    echo
-    
-    print_status "Certificate expiration:"
-    sudo openssl x509 -in "$CERT_PATH/fullchain.pem" -dates -noout
-    echo
-    
+    # Check if we can read the certificate
+    if sudo test -f "$CERT_PATH/fullchain.pem"; then
+        print_status "Certificate file accessible"
+        
+        # Check certificate details
+        print_status "Certificate details:"
+        sudo openssl x509 -in "$CERT_PATH/fullchain.pem" -text -noout | grep -A 1 "Subject:" 2>/dev/null || print_warning "Could not read certificate subject"
+        echo
+        
+        print_status "Subject Alternative Names:"
+        sudo openssl x509 -in "$CERT_PATH/fullchain.pem" -text -noout | grep -A 1 "Subject Alternative Name:" 2>/dev/null || echo "No SAN found"
+        echo
+        
+        print_status "Certificate expiration:"
+        sudo openssl x509 -in "$CERT_PATH/fullchain.pem" -dates -noout 2>/dev/null || print_warning "Could not read certificate dates"
+        echo
+        
+        # Check certificate common name
+        CERT_CN=$(sudo openssl x509 -in "$CERT_PATH/fullchain.pem" -subject -noout 2>/dev/null | sed 's/.*CN=\([^,]*\).*/\1/' || echo "Unknown")
+        print_status "Certificate Common Name: $CERT_CN"
+        
+        if [ "$CERT_CN" = "$DOMAIN" ]; then
+            print_status "✓ Certificate Common Name matches domain"
+        else
+            print_error "✗ Certificate Common Name ($CERT_CN) does not match domain ($DOMAIN)"
+            print_warning "This is likely causing the SSL error"
+        fi
+        echo
+        
+    else
+        print_error "Certificate files not accessible in: $CERT_PATH"
+        echo
+    fi
 else
     print_error "Certificate directory not found: $CERT_PATH"
     echo
@@ -87,44 +107,155 @@ fi
 
 # Check if domain resolves to this server
 print_status "DNS resolution check:"
-DOMAIN_IP=$(dig +short "$DOMAIN" 2>/dev/null || echo "DNS lookup failed")
-if [ -n "$DOMAIN_IP" ] && [ "$DOMAIN_IP" != "DNS lookup failed" ]; then
-    print_status "Domain $DOMAIN resolves to: $DOMAIN_IP"
-    
-    # Get server's public IP
-    SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s ipinfo.io/ip 2>/dev/null || echo "Unable to determine server IP")
-    if [ "$DOMAIN_IP" = "$SERVER_IP" ]; then
-        print_status "✓ Domain points to this server"
-    else
-        print_warning "⚠ Domain points to $DOMAIN_IP, but this server is $SERVER_IP"
+
+# Check IPv4 resolution
+DOMAIN_IPV4=$(dig +short A "$DOMAIN" 2>/dev/null || echo "")
+if [ -n "$DOMAIN_IPV4" ]; then
+    print_status "Domain $DOMAIN (IPv4) resolves to: $DOMAIN_IPV4"
+else
+    print_warning "No IPv4 (A) record found for $DOMAIN"
+fi
+
+# Check IPv6 resolution
+DOMAIN_IPV6=$(dig +short AAAA "$DOMAIN" 2>/dev/null || echo "")
+if [ -n "$DOMAIN_IPV6" ]; then
+    print_status "Domain $DOMAIN (IPv6) resolves to: $DOMAIN_IPV6"
+else
+    print_warning "No IPv6 (AAAA) record found for $DOMAIN"
+fi
+
+# Get server's public IPs
+print_status "Server IP addresses:"
+SERVER_IPV4=$(curl -4 -s ifconfig.me 2>/dev/null || curl -4 -s ipinfo.io/ip 2>/dev/null || echo "")
+SERVER_IPV6=$(curl -6 -s ifconfig.me 2>/dev/null || curl -6 -s ipinfo.io/ip 2>/dev/null || echo "")
+
+if [ -n "$SERVER_IPV4" ]; then
+    print_status "Server IPv4: $SERVER_IPV4"
+else
+    print_warning "Server IPv4: Not available or not accessible"
+fi
+
+if [ -n "$SERVER_IPV6" ]; then
+    print_status "Server IPv6: $SERVER_IPV6"
+else
+    print_warning "Server IPv6: Not available or not accessible"
+fi
+
+echo
+print_status "DNS Validation:"
+
+# Check IPv4 match
+if [ -n "$DOMAIN_IPV4" ] && [ -n "$SERVER_IPV4" ] && [ "$DOMAIN_IPV4" = "$SERVER_IPV4" ]; then
+    print_status "✓ IPv4 DNS matches server"
+    DNS_VALID=true
+elif [ -n "$DOMAIN_IPV4" ] && [ -n "$SERVER_IPV4" ]; then
+    print_error "✗ IPv4 DNS mismatch: Domain($DOMAIN_IPV4) ≠ Server($SERVER_IPV4)"
+    DNS_VALID=false
+else
+    print_warning "⚠ IPv4 comparison not possible"
+    DNS_VALID=false
+fi
+
+# Check IPv6 match
+if [ -n "$DOMAIN_IPV6" ] && [ -n "$SERVER_IPV6" ] && [ "$DOMAIN_IPV6" = "$SERVER_IPV6" ]; then
+    print_status "✓ IPv6 DNS matches server"
+    if [ "$DNS_VALID" != "true" ]; then
+        DNS_VALID=true
+    fi
+elif [ -n "$DOMAIN_IPV6" ] && [ -n "$SERVER_IPV6" ]; then
+    print_error "✗ IPv6 DNS mismatch: Domain($DOMAIN_IPV6) ≠ Server($SERVER_IPV6)"
+    if [ "$DNS_VALID" != "true" ]; then
+        DNS_VALID=false
     fi
 else
-    print_error "✗ Domain does not resolve or DNS lookup failed"
+    print_warning "⚠ IPv6 comparison not possible"
+fi
+
+if [ "$DNS_VALID" != "true" ]; then
+    print_error "⚠ DNS does not point to this server correctly"
+    echo
+    print_warning "SSL certificate generation will fail with current DNS settings"
+    echo
 fi
 
 echo
 print_status "=== Recommendations ==="
 
+if [ "$DNS_VALID" != "true" ]; then
+    print_error "CRITICAL: Fix DNS configuration first!"
+    echo
+    echo "1. Update DNS records to point to this server:"
+    if [ -n "$SERVER_IPV4" ]; then
+        echo "   A record: $DOMAIN → $SERVER_IPV4"
+    fi
+    if [ -n "$SERVER_IPV6" ]; then
+        echo "   AAAA record: $DOMAIN → $SERVER_IPV6"
+    fi
+    echo
+    echo "2. Wait for DNS propagation (can take up to 48 hours)"
+    echo "   Test with: dig +short $DOMAIN"
+    echo
+    echo "3. Verify DNS points to server before generating SSL certificate"
+    echo
+    print_warning "SSL certificates cannot be generated until DNS points to this server!"
+    echo
+fi
+
 if [ ! -d "$CERT_PATH" ]; then
-    echo "1. Generate SSL certificate for $DOMAIN:"
+    echo "Generate SSL certificate for $DOMAIN (after fixing DNS):"
     echo "   sudo certbot certonly --apache -d $DOMAIN --email your-email@example.com"
     echo
 fi
 
-echo "2. Verify certificate matches domain:"
+echo "Verify certificate matches domain:"
 echo "   sudo openssl x509 -in /etc/letsencrypt/live/$DOMAIN/fullchain.pem -text -noout | grep -A 5 'Subject Alternative Name'"
 echo
 
-echo "3. Test SSL configuration:"
+echo "Test SSL configuration:"
 echo "   sudo apache2ctl configtest"
 echo "   sudo systemctl reload apache2"
 echo
 
-echo "4. Test certificate online:"
+echo "Test certificate online (after DNS is fixed):"
 echo "   https://www.ssllabs.com/ssltest/analyze.html?d=$DOMAIN"
 echo
 
-echo "5. If certificate exists but domain doesn't match, regenerate:"
+echo "If certificate exists but domain doesn't match, regenerate:"
 echo "   sudo certbot delete --cert-name $DOMAIN"
 echo "   sudo certbot certonly --apache -d $DOMAIN --email your-email@example.com"
 echo
+
+if [ "$DNS_VALID" != "true" ]; then
+    print_error "IMPORTANT: SSL certificate generation will fail until DNS is corrected!"
+    echo
+    echo "Common DNS fixes:"
+    if [ -n "$SERVER_IPV4" ]; then
+        echo "• Update A record in your DNS provider to point to: $SERVER_IPV4"
+    fi
+    if [ -n "$SERVER_IPV6" ]; then
+        echo "• Add/update AAAA record in your DNS provider to point to: $SERVER_IPV6"
+    fi
+    echo "• Remove any conflicting DNS records"
+    echo "• Wait for DNS propagation and test with: dig +short $DOMAIN"
+    echo
+    print_warning "Quick fix commands (run after DNS is corrected):"
+    echo "  sudo certbot delete --cert-name $DOMAIN"
+    echo "  sudo certbot certonly --apache -d $DOMAIN --email your-email@example.com"
+    echo "  sudo systemctl reload apache2"
+fi
+
+# Check if there's a certificate mismatch
+if sudo test -d "$CERT_PATH"; then
+    CERT_CN=$(sudo openssl x509 -in "$CERT_PATH/fullchain.pem" -subject -noout 2>/dev/null | sed 's/.*CN=\([^,]*\).*/\1/' || echo "Unknown")
+    if [ "$CERT_CN" != "$DOMAIN" ] && [ "$CERT_CN" != "Unknown" ]; then
+        echo
+        print_error "CERTIFICATE MISMATCH DETECTED!"
+        print_error "Certificate is for: $CERT_CN"
+        print_error "But you're accessing: $DOMAIN"
+        echo
+        print_warning "Quick fix for certificate mismatch:"
+        echo "  sudo certbot delete --cert-name $DOMAIN"
+        echo "  sudo certbot certonly --apache -d $DOMAIN --email your-email@example.com"
+        echo "  sudo systemctl reload apache2"
+    fi
+fi

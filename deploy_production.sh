@@ -930,6 +930,32 @@ if [ "$enable_ssl" = "true" ]; then
         print_status "OCSP stapling cache configured"
     fi
     
+    # Check DNS configuration before SSL setup
+    print_status "Verifying DNS configuration..."
+    DOMAIN_IP=$(dig +short A "$domain" 2>/dev/null || echo "")
+    SERVER_IP=$(curl -4 -s ifconfig.me 2>/dev/null || curl -4 -s ipinfo.io/ip 2>/dev/null || echo "")
+    
+    DNS_VALID=false
+    if [ -n "$DOMAIN_IP" ] && [ -n "$SERVER_IP" ] && [ "$DOMAIN_IP" = "$SERVER_IP" ]; then
+        print_status "✓ DNS correctly points to this server ($SERVER_IP)"
+        DNS_VALID=true
+    elif [ -n "$DOMAIN_IP" ] && [ -n "$SERVER_IP" ]; then
+        print_error "✗ DNS mismatch: Domain points to $DOMAIN_IP, but server is $SERVER_IP"
+        print_error "SSL certificate generation will fail with current DNS configuration"
+        echo
+        print_warning "Please update your DNS A record to point $domain to $SERVER_IP"
+        print_warning "Wait for DNS propagation, then run the deployment again"
+        echo
+        read -p "Continue anyway? (not recommended) (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_status "Exiting to allow DNS configuration. Run deployment again after fixing DNS."
+            exit 0
+        fi
+    else
+        print_warning "Could not verify DNS configuration"
+    fi
+    
     # Check existing certificate
     CERT_VALID=false
     if check_ssl_certificate "$domain"; then
