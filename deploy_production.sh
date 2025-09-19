@@ -412,6 +412,25 @@ if [ "$APACHE_CONFIG_EXISTS" = false ]; then
         AllowOverride All
         Require all granted
         
+        # Proper MIME types for static files
+        <FilesMatch "\.(css)$">
+            Header set Content-Type "text/css"
+        </FilesMatch>
+        
+        <FilesMatch "\.(js)$">
+            Header set Content-Type "application/javascript"
+        </FilesMatch>
+        
+        <FilesMatch "\.(png|jpg|jpeg|gif|svg)$">
+            Header set Content-Type "image/%{REQUEST_FILENAME}"
+        </FilesMatch>
+        
+        # Prevent PHP processing of static files
+        <FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$">
+            SetHandler none
+            ForceType none
+        </FilesMatch>
+        
         # Prevent access to sensitive files
         <FilesMatch "\.(php|log|sh|md)$">
             <RequireAll>
@@ -768,6 +787,25 @@ EOF
         Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
+        
+        # Proper MIME types for static files
+        <FilesMatch "\.(css)$">
+            Header set Content-Type "text/css"
+        </FilesMatch>
+        
+        <FilesMatch "\.(js)$">
+            Header set Content-Type "application/javascript"
+        </FilesMatch>
+        
+        <FilesMatch "\.(png|jpg|jpeg|gif|svg)$">
+            Header set Content-Type "image/%{REQUEST_FILENAME}"
+        </FilesMatch>
+        
+        # Prevent PHP processing of static files
+        <FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$">
+            SetHandler none
+            ForceType none
+        </FilesMatch>
         
         # Prevent access to sensitive files
         <FilesMatch "\.(php|log|sh|md)$">

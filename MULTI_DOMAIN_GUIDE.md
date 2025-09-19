@@ -322,7 +322,12 @@ The script will automatically:
    - Ensure all resources (images, CSS, JS) use HTTPS or relative URLs
    - Check Content Security Policy headers aren't too restrictive
 
-4. **SSL certificate renewal issues**:
+4. **CSS/JS MIME type errors**:
+   - Apache configuration now includes proper MIME type handling
+   - Static files are prevented from being processed as PHP
+   - Use the provided .htaccess.example if needed
+
+5. **SSL certificate renewal issues**:
    - Test renewal: `sudo certbot renew --dry-run`
    - Check cron job: `sudo crontab -l | grep certbot`
    - Verify certificate expiration: `sudo certbot certificates`

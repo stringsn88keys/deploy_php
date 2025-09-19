@@ -14,6 +14,7 @@ This directory contains deployment scripts and configuration templates for the M
 
 - **`deploy.ini.example`** - Example configuration file with all available options
 - **`config.php.template`** - PHP configuration template with placeholders
+- **`.htaccess.example`** - Example .htaccess file with proper MIME type handling
 
 ## Quick Start
 

@@ -499,6 +499,25 @@ configure_apache() {
         Header always set X-Content-Type-Options nosniff
         Header always set X-Frame-Options DENY
         Header always set X-XSS-Protection "1; mode=block"
+        
+        # Proper MIME types for static files
+        <FilesMatch "\.(css)$">
+            Header set Content-Type "text/css"
+        </FilesMatch>
+        
+        <FilesMatch "\.(js)$">
+            Header set Content-Type "application/javascript"
+        </FilesMatch>
+        
+        <FilesMatch "\.(png|jpg|jpeg|gif|svg)$">
+            Header set Content-Type "image/%{REQUEST_FILENAME}"
+        </FilesMatch>
+        
+        # Prevent PHP processing of static files
+        <FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$">
+            SetHandler none
+            ForceType none
+        </FilesMatch>
     </Directory>
     
     ErrorLog \${APACHE_LOG_DIR}/${app_name}_error.log
@@ -553,6 +572,13 @@ server {
     
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+    
+    # Handle static files with proper MIME types
+    location ~* \.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
     }
     
     location ~ \.php$ {

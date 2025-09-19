@@ -1,0 +1,47 @@
+# Meeting Meter .htaccess Configuration
+# Copy this file to your application's source directory as .htaccess
+
+# Enable rewrite engine
+RewriteEngine On
+
+# Proper MIME types for static files
+<FilesMatch "\.(css)$">
+    Header set Content-Type "text/css"
+</FilesMatch>
+
+<FilesMatch "\.(js)$">
+    Header set Content-Type "application/javascript"
+</FilesMatch>
+
+# Prevent PHP processing of static files
+<FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$">
+    SetHandler none
+    ForceType none
+</FilesMatch>
+
+# Security headers
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block"
+
+# Cache static files
+<FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$">
+    ExpiresActive On
+    ExpiresDefault "access plus 1 year"
+    Header set Cache-Control "public, immutable"
+</FilesMatch>
+
+# Deny access to sensitive files
+<FilesMatch "\.(ini|log|sh|md|bak|config)$">
+    Require all denied
+</FilesMatch>
+
+# Deny access to hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# PHP settings (if needed)
+# php_value upload_max_filesize 10M
+# php_value post_max_size 10M
+# php_value max_execution_time 30
