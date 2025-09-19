@@ -728,9 +728,10 @@ update_apache_ssl_config() {
     ServerName $domain_name
 EOF
 
-    # Add alternative domains if specified
-    if [ -n "$ssl_alt_domains" ]; then
+    # Add alternative domains if specified and not empty
+    if [ -n "$ssl_alt_domains" ] && [ "$ssl_alt_domains" != "" ]; then
         echo "    ServerAlias $ssl_alt_domains" | sudo tee -a "$config_file" > /dev/null
+        print_status "Added SSL alternative domains: $ssl_alt_domains"
     fi
 
     # Continue with SSL configuration
@@ -825,16 +826,21 @@ if [ "$enable_ssl" = "true" ]; then
     if command -v certbot &> /dev/null; then
         print_status "Setting up SSL certificate..."
         
-        # Build certbot command with alternative domains
+        # Build certbot command - only include alt domains if explicitly specified
         CERTBOT_CMD="sudo certbot certonly --apache -d $domain"
-        if [ -n "$ssl_alt_domains" ]; then
+        if [ -n "$ssl_alt_domains" ] && [ "$ssl_alt_domains" != "" ]; then
+            print_status "Including additional SSL domains: $ssl_alt_domains"
             # Split ssl_alt_domains by comma and add each as -d option
             IFS=',' read -ra ALT_DOMAINS <<< "$ssl_alt_domains"
             for alt_domain in "${ALT_DOMAINS[@]}"; do
                 # Trim whitespace
                 alt_domain=$(echo "$alt_domain" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-                CERTBOT_CMD="$CERTBOT_CMD -d $alt_domain"
+                if [ -n "$alt_domain" ]; then
+                    CERTBOT_CMD="$CERTBOT_CMD -d $alt_domain"
+                fi
             done
+        else
+            print_status "SSL certificate will be generated for main domain only: $domain"
         fi
         CERTBOT_CMD="$CERTBOT_CMD --non-interactive --agree-tos --email $ssl_email"
         
@@ -866,16 +872,21 @@ if [ "$enable_ssl" = "true" ]; then
         print_warning "Certbot not found. Installing..."
         sudo apt install -y certbot python3-certbot-apache
         
-        # Build certbot command with alternative domains
+        # Build certbot command - only include alt domains if explicitly specified
         CERTBOT_CMD="sudo certbot certonly --apache -d $domain"
-        if [ -n "$ssl_alt_domains" ]; then
+        if [ -n "$ssl_alt_domains" ] && [ "$ssl_alt_domains" != "" ]; then
+            print_status "Including additional SSL domains: $ssl_alt_domains"
             # Split ssl_alt_domains by comma and add each as -d option
             IFS=',' read -ra ALT_DOMAINS <<< "$ssl_alt_domains"
             for alt_domain in "${ALT_DOMAINS[@]}"; do
                 # Trim whitespace
                 alt_domain=$(echo "$alt_domain" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-                CERTBOT_CMD="$CERTBOT_CMD -d $alt_domain"
+                if [ -n "$alt_domain" ]; then
+                    CERTBOT_CMD="$CERTBOT_CMD -d $alt_domain"
+                fi
             done
+        else
+            print_status "SSL certificate will be generated for main domain only: $domain"
         fi
         CERTBOT_CMD="$CERTBOT_CMD --non-interactive --agree-tos --email $ssl_email"
         

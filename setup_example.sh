@@ -199,7 +199,7 @@ secure_config_dir = /etc/meeting_meter
 log_dir = /var/log/meeting_meter
 enable_ssl = false
 ssl_email = webmaster@meetingmeter.example.com
-ssl_alt_domains = www.meetingmeter.example.com
+ssl_alt_domains =
 backup_dir = /tmp/meeting_meter_backup
 
 [meetingmeter2.example.com]
@@ -214,7 +214,7 @@ secure_config_dir = /etc/meeting_meter_2
 log_dir = /var/log/meeting_meter_2
 enable_ssl = false
 ssl_email = webmaster@meetingmeter2.example.com
-ssl_alt_domains = www.meetingmeter2.example.com
+ssl_alt_domains =
 backup_dir = /tmp/meeting_meter_2_backup
 EOF
         echo

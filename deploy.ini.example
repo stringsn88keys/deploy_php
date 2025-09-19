@@ -104,7 +104,8 @@ enable_ssl = false
 ssl_email = webmaster@meetingmeter.example.com
 
 # Additional domains for SSL (used in single domain mode)
-ssl_alt_domains = www.meetingmeter.example.com
+# Leave empty to only use the main domain, or specify comma-separated domains
+ssl_alt_domains =
 
 [systemd]
 # Enable systemd service

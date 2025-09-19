@@ -154,9 +154,12 @@ add_domain() {
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         enable_ssl=true
         read -p "SSL email address: " ssl_email
+        read -p "Additional SSL domains (comma-separated, leave empty for none): " ssl_alt_domains
+        ssl_alt_domains=${ssl_alt_domains:-""}
     else
         enable_ssl=false
         ssl_email=""
+        ssl_alt_domains=""
     fi
     
     # Add domain configuration
@@ -183,7 +186,7 @@ log_dir = /var/log/$app_name
 # SSL settings
 enable_ssl = $enable_ssl
 ssl_email = $ssl_email
-ssl_alt_domains = www.$domain_name
+ssl_alt_domains = $ssl_alt_domains
 
 # System service settings
 service_file = /etc/systemd/system/${app_name}.service

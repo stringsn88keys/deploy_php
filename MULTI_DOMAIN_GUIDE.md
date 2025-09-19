@@ -83,7 +83,7 @@ secure_config_dir = /etc/meeting_meter
 log_dir = /var/log/meeting_meter
 enable_ssl = false
 ssl_email = webmaster@meetingmeter.example.com
-ssl_alt_domains = www.meetingmeter.example.com
+ssl_alt_domains =
 backup_dir = /tmp/meeting_meter_backup
 
 [meetingmeter2.example.com]
@@ -98,7 +98,7 @@ secure_config_dir = /etc/meeting_meter_2
 log_dir = /var/log/meeting_meter_2
 enable_ssl = false
 ssl_email = webmaster@meetingmeter2.example.com
-ssl_alt_domains = www.meetingmeter2.example.com
+ssl_alt_domains =
 backup_dir = /tmp/meeting_meter_2_backup
 ```
 
@@ -132,8 +132,10 @@ backup_dir = /tmp/meeting_meter_2_backup
 2. Enter the domain name (e.g., `example.com`)
 3. Enter application name (defaults to domain name)
 4. Enter application directory (defaults to sanitized domain name)
-5. Choose whether to enable SSL
-6. If SSL enabled, enter SSL email address
+5. Enter source directory (defaults to ../meeting_meter)
+6. Choose whether to enable SSL
+7. If SSL enabled, enter SSL email address
+8. If SSL enabled, optionally enter additional SSL domains (leave empty for main domain only)
 
 ### Domain Configuration Fields
 
@@ -150,7 +152,7 @@ Each domain configuration includes:
 - **log_dir**: Log directory for this domain
 - **enable_ssl**: Whether SSL is enabled
 - **ssl_email**: Email for SSL certificate
-- **ssl_alt_domains**: Alternative domains for SSL
+- **ssl_alt_domains**: Additional domains for SSL certificate (optional, comma-separated)
 - **backup_dir**: Backup directory for this domain
 
 ## Source Directory Support
@@ -254,8 +256,31 @@ Each domain can have its own SSL certificate:
 
 1. Set `enable_ssl = true` in the domain configuration
 2. Set the `ssl_email` for Let's Encrypt registration
-3. Add alternative domains in `ssl_alt_domains`
+3. Optionally add alternative domains in `ssl_alt_domains` (comma-separated)
 4. Run the production deployment script
+
+**Note**: Alternative domains are optional. Leave `ssl_alt_domains` empty to generate SSL certificates for the main domain only.
+
+### SSL Alternative Domains
+
+The `ssl_alt_domains` field allows you to specify additional domains for the SSL certificate:
+
+- **Empty** (recommended): Certificate for main domain only
+  ```ini
+  ssl_alt_domains =
+  ```
+
+- **Single alternative**: Certificate for main domain + one alternative
+  ```ini
+  ssl_alt_domains = www.example.com
+  ```
+
+- **Multiple alternatives**: Certificate for main domain + multiple alternatives
+  ```ini
+  ssl_alt_domains = www.example.com,app.example.com,api.example.com
+  ```
+
+**Important**: All alternative domains must point to the same server and be accessible during certificate generation.
 
 The script will automatically:
 - Install certbot if not present

@@ -24,7 +24,7 @@ log_dir = /var/log/meeting_meter
 # SSL settings
 enable_ssl = false
 ssl_email = webmaster@meetingmeter.example.com
-ssl_alt_domains = www.meetingmeter.example.com
+ssl_alt_domains =
 
 # System service settings
 service_file = /etc/systemd/system/meeting-meter.service
@@ -55,7 +55,7 @@ log_dir = /var/log/meeting_meter_2
 # SSL settings
 enable_ssl = false
 ssl_email = webmaster@meetingmeter2.example.com
-ssl_alt_domains = www.meetingmeter2.example.com
+ssl_alt_domains =
 
 # System service settings
 service_file = /etc/systemd/system/meeting-meter-2.service
@@ -86,7 +86,7 @@ log_dir = /var/log/meeting_meter_3
 # SSL settings
 enable_ssl = false
 ssl_email = webmaster@meetingmeter3.example.com
-ssl_alt_domains = www.meetingmeter3.example.com
+ssl_alt_domains =
 
 # System service settings
 service_file = /etc/systemd/system/meeting-meter-3.service
