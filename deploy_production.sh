@@ -882,6 +882,39 @@ EOF
     print_status "SSL configuration added to Apache virtual host"
 }
 
+# Function to check if SSL certificate matches domain
+check_ssl_certificate() {
+    local domain_to_check="$1"
+    local cert_path="/etc/letsencrypt/live/$domain_to_check"
+    
+    if [ -d "$cert_path" ]; then
+        print_status "Checking existing SSL certificate for $domain_to_check..."
+        
+        # Get certificate subject and SAN
+        CERT_SUBJECT=$(sudo openssl x509 -in "$cert_path/fullchain.pem" -text -noout | grep "Subject:" | sed 's/.*CN=\([^,]*\).*/\1/' 2>/dev/null || echo "")
+        CERT_SAN=$(sudo openssl x509 -in "$cert_path/fullchain.pem" -text -noout | grep -A 1 "Subject Alternative Name:" | tail -1 | sed 's/.*DNS://g' | sed 's/, DNS:/,/g' 2>/dev/null || echo "")
+        
+        print_status "Certificate Subject (CN): $CERT_SUBJECT"
+        print_status "Certificate SAN: $CERT_SAN"
+        
+        # Check if domain matches
+        if [[ "$CERT_SUBJECT" == "$domain_to_check" ]] || [[ "$CERT_SAN" == *"$domain_to_check"* ]]; then
+            print_status "✓ Certificate matches domain"
+            return 0
+        else
+            print_warning "⚠ Certificate does not match domain $domain_to_check"
+            print_warning "Certificate is for: $CERT_SUBJECT"
+            if [ -n "$CERT_SAN" ]; then
+                print_warning "Certificate SAN: $CERT_SAN"
+            fi
+            return 1
+        fi
+    else
+        print_status "No existing certificate found for $domain_to_check"
+        return 1
+    fi
+}
+
 # Create SSL certificate (optional)
 if [ "$enable_ssl" = "true" ]; then
     print_warning "=== SSL Certificate Setup ==="
@@ -897,33 +930,69 @@ if [ "$enable_ssl" = "true" ]; then
         print_status "OCSP stapling cache configured"
     fi
     
-    if command -v certbot &> /dev/null; then
-        print_status "Setting up SSL certificate..."
+    # Check existing certificate
+    CERT_VALID=false
+    if check_ssl_certificate "$domain"; then
+        CERT_VALID=true
+        print_status "Existing certificate is valid for this domain"
+    else
+        print_warning "Certificate validation failed or certificate doesn't exist"
         
-        # Build certbot command - only include alt domains if explicitly specified
-        CERTBOT_CMD="sudo certbot certonly --apache -d $domain"
-        if [ -n "$ssl_alt_domains" ] && [ "$ssl_alt_domains" != "" ]; then
-            print_status "Including additional SSL domains: $ssl_alt_domains"
-            # Split ssl_alt_domains by comma and add each as -d option
-            IFS=',' read -ra ALT_DOMAINS <<< "$ssl_alt_domains"
-            for alt_domain in "${ALT_DOMAINS[@]}"; do
-                # Trim whitespace
-                alt_domain=$(echo "$alt_domain" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-                if [ -n "$alt_domain" ]; then
-                    CERTBOT_CMD="$CERTBOT_CMD -d $alt_domain"
-                fi
-            done
-        else
-            print_status "SSL certificate will be generated for main domain only: $domain"
+        # Check if certificate exists for a different domain
+        if [ -d "/etc/letsencrypt/live/$domain" ]; then
+            print_warning "Certificate exists but doesn't match domain. Regenerating..."
+            read -p "Delete existing certificate and create new one? (y/N): " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                sudo certbot delete --cert-name "$domain" --non-interactive
+                print_status "Existing certificate deleted"
+                CERT_VALID=false
+            else
+                print_warning "Keeping existing certificate. SSL may not work correctly."
+                CERT_VALID=true
+            fi
         fi
-        CERTBOT_CMD="$CERTBOT_CMD --non-interactive --agree-tos --email $ssl_email"
-        
-        # Run certbot
-        eval $CERTBOT_CMD
-        
-        if [ $? -eq 0 ]; then
-            print_status "SSL certificate obtained successfully!"
+    fi
+    
+    if command -v certbot &> /dev/null; then
+        # Only generate certificate if current one is not valid
+        if [ "$CERT_VALID" = false ]; then
+            print_status "Setting up SSL certificate..."
             
+            # Build certbot command - only include alt domains if explicitly specified
+            CERTBOT_CMD="sudo certbot certonly --apache -d $domain"
+            if [ -n "$ssl_alt_domains" ] && [ "$ssl_alt_domains" != "" ]; then
+                print_status "Including additional SSL domains: $ssl_alt_domains"
+                # Split ssl_alt_domains by comma and add each as -d option
+                IFS=',' read -ra ALT_DOMAINS <<< "$ssl_alt_domains"
+                for alt_domain in "${ALT_DOMAINS[@]}"; do
+                    # Trim whitespace
+                    alt_domain=$(echo "$alt_domain" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                    if [ -n "$alt_domain" ]; then
+                        CERTBOT_CMD="$CERTBOT_CMD -d $alt_domain"
+                    fi
+                done
+            else
+                print_status "SSL certificate will be generated for main domain only: $domain"
+            fi
+            CERTBOT_CMD="$CERTBOT_CMD --non-interactive --agree-tos --email $ssl_email"
+            
+            # Run certbot
+            eval $CERTBOT_CMD
+            
+            if [ $? -eq 0 ]; then
+                print_status "SSL certificate obtained successfully!"
+                CERT_VALID=true
+            else
+                print_error "SSL certificate setup failed"
+                exit 1
+            fi
+        else
+            print_status "Using existing valid certificate"
+        fi
+        
+        # Update Apache configuration with SSL settings if certificate is valid
+        if [ "$CERT_VALID" = true ]; then
             # Update Apache configuration with SSL settings
             update_apache_ssl_config "$apache_config_file" "$domain" "$app_name" "$web_root" "$app_dir" "$ssl_alt_domains"
             
@@ -938,38 +1007,47 @@ if [ "$enable_ssl" = "true" ]; then
             fi
             
             print_status "SSL certificate configured and Apache updated!"
-        else
-            print_error "SSL certificate setup failed"
-            exit 1
         fi
     else
         print_warning "Certbot not found. Installing..."
         sudo apt install -y certbot python3-certbot-apache
         
-        # Build certbot command - only include alt domains if explicitly specified
-        CERTBOT_CMD="sudo certbot certonly --apache -d $domain"
-        if [ -n "$ssl_alt_domains" ] && [ "$ssl_alt_domains" != "" ]; then
-            print_status "Including additional SSL domains: $ssl_alt_domains"
-            # Split ssl_alt_domains by comma and add each as -d option
-            IFS=',' read -ra ALT_DOMAINS <<< "$ssl_alt_domains"
-            for alt_domain in "${ALT_DOMAINS[@]}"; do
-                # Trim whitespace
-                alt_domain=$(echo "$alt_domain" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-                if [ -n "$alt_domain" ]; then
-                    CERTBOT_CMD="$CERTBOT_CMD -d $alt_domain"
-                fi
-            done
-        else
-            print_status "SSL certificate will be generated for main domain only: $domain"
-        fi
-        CERTBOT_CMD="$CERTBOT_CMD --non-interactive --agree-tos --email $ssl_email"
-        
-        # Run certbot
-        eval $CERTBOT_CMD
-        
-        if [ $? -eq 0 ]; then
-            print_status "SSL certificate obtained successfully!"
+        # Only generate certificate if current one is not valid
+        if [ "$CERT_VALID" = false ]; then
+            # Build certbot command - only include alt domains if explicitly specified
+            CERTBOT_CMD="sudo certbot certonly --apache -d $domain"
+            if [ -n "$ssl_alt_domains" ] && [ "$ssl_alt_domains" != "" ]; then
+                print_status "Including additional SSL domains: $ssl_alt_domains"
+                # Split ssl_alt_domains by comma and add each as -d option
+                IFS=',' read -ra ALT_DOMAINS <<< "$ssl_alt_domains"
+                for alt_domain in "${ALT_DOMAINS[@]}"; do
+                    # Trim whitespace
+                    alt_domain=$(echo "$alt_domain" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                    if [ -n "$alt_domain" ]; then
+                        CERTBOT_CMD="$CERTBOT_CMD -d $alt_domain"
+                    fi
+                done
+            else
+                print_status "SSL certificate will be generated for main domain only: $domain"
+            fi
+            CERTBOT_CMD="$CERTBOT_CMD --non-interactive --agree-tos --email $ssl_email"
             
+            # Run certbot
+            eval $CERTBOT_CMD
+            
+            if [ $? -eq 0 ]; then
+                print_status "SSL certificate obtained successfully!"
+                CERT_VALID=true
+            else
+                print_error "SSL certificate setup failed"
+                exit 1
+            fi
+        else
+            print_status "Using existing valid certificate"
+        fi
+        
+        # Update Apache configuration with SSL settings if certificate is valid
+        if [ "$CERT_VALID" = true ]; then
             # Update Apache configuration with SSL settings
             update_apache_ssl_config "$apache_config_file" "$domain" "$app_name" "$web_root" "$app_dir" "$ssl_alt_domains"
             
@@ -984,9 +1062,6 @@ if [ "$enable_ssl" = "true" ]; then
             fi
             
             print_status "SSL certificate configured and Apache updated!"
-        else
-            print_error "SSL certificate setup failed"
-            exit 1
         fi
     fi
 fi
