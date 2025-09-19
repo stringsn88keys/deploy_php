@@ -486,6 +486,12 @@ sudo systemctl reload apache2
 if [ "$enable_logrotate" = "true" ]; then
     print_status "Setting up log rotation..."
     
+    # Use domain-specific logrotate file if not specified
+    if [ -z "$logrotate_file" ]; then
+        logrotate_file="/etc/logrotate.d/${app_name}"
+        print_status "Using domain-specific logrotate file: $logrotate_file"
+    fi
+    
     # Check if log rotation configuration already exists
     if [ -f "$logrotate_file" ]; then
         print_warning "Log rotation configuration already exists at: $logrotate_file"
@@ -504,7 +510,7 @@ if [ "$enable_logrotate" = "true" ]; then
     
     # Only create/overwrite if user confirmed or file doesn't exist
     if [ "$LOGROTATE_EXISTS" = false ]; then
-        print_status "Creating log rotation configuration..."
+        print_status "Creating domain-specific log rotation configuration..."
         sudo tee "$logrotate_file" > /dev/null <<EOF
 $log_dir/*.log {
     daily
@@ -543,6 +549,18 @@ fi
 if [ "$enable_service" = "true" ]; then
     print_status "Setting up systemd service..."
     
+    # Use domain-specific service file if not specified
+    if [ -z "$service_file" ]; then
+        service_file="/etc/systemd/system/${app_name}.service"
+        print_status "Using domain-specific service file: $service_file"
+    fi
+    
+    # Use domain-specific env file if not specified
+    if [ -z "$env_file" ]; then
+        env_file="/etc/default/${app_name}"
+        print_status "Using domain-specific env file: $env_file"
+    fi
+    
     # Check if systemd service already exists
     if [ -f "$service_file" ]; then
         print_warning "Systemd service already exists at: $service_file"
@@ -561,10 +579,10 @@ if [ "$enable_service" = "true" ]; then
     
     # Only create/overwrite if user confirmed or file doesn't exist
     if [ "$SYSTEMD_EXISTS" = false ]; then
-        print_status "Creating systemd service..."
+        print_status "Creating domain-specific systemd service..."
         sudo tee "$service_file" > /dev/null <<EOF
 [Unit]
-Description=Meeting Meter Application
+Description=Meeting Meter Application - $domain ($app_name)
 After=apache2.service
 Wants=apache2.service
 
@@ -607,11 +625,13 @@ EOF
     if [ "$ENV_EXISTS" = false ]; then
         print_status "Creating environment file..."
         sudo tee "$env_file" > /dev/null <<EOF
-# Meeting Meter Environment Variables
+# Meeting Meter Environment Variables - $domain ($app_name)
 MEETING_METER_CONFIG_DIR=$secure_config_dir
 MEETING_METER_LOG_DIR=$log_dir
 MEETING_METER_WEB_ROOT=$web_root/$app_dir
 MEETING_METER_DOMAIN=$domain
+MEETING_METER_APP_NAME=$app_name
+MEETING_METER_SSL_ENABLED=$enable_ssl
 EOF
         sudo chmod 644 "$env_file"
         print_status "Environment file created"

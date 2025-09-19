@@ -26,6 +26,11 @@ enable_ssl = false
 ssl_email = webmaster@meetingmeter.example.com
 ssl_alt_domains = www.meetingmeter.example.com
 
+# System service settings
+service_file = /etc/systemd/system/meeting-meter.service
+env_file = /etc/default/meeting-meter
+logrotate_file = /etc/logrotate.d/meeting-meter
+
 # Backup settings
 backup_dir = /tmp/meeting_meter_backup
 
@@ -52,6 +57,11 @@ enable_ssl = false
 ssl_email = webmaster@meetingmeter2.example.com
 ssl_alt_domains = www.meetingmeter2.example.com
 
+# System service settings
+service_file = /etc/systemd/system/meeting-meter-2.service
+env_file = /etc/default/meeting-meter-2
+logrotate_file = /etc/logrotate.d/meeting-meter-2
+
 # Backup settings
 backup_dir = /tmp/meeting_meter_2_backup
 
@@ -77,6 +87,11 @@ log_dir = /var/log/meeting_meter_3
 enable_ssl = false
 ssl_email = webmaster@meetingmeter3.example.com
 ssl_alt_domains = www.meetingmeter3.example.com
+
+# System service settings
+service_file = /etc/systemd/system/meeting-meter-3.service
+env_file = /etc/default/meeting-meter-3
+logrotate_file = /etc/logrotate.d/meeting-meter-3
 
 # Backup settings
 backup_dir = /tmp/meeting_meter_3_backup

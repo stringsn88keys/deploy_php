@@ -185,6 +185,11 @@ enable_ssl = $enable_ssl
 ssl_email = $ssl_email
 ssl_alt_domains = www.$domain_name
 
+# System service settings
+service_file = /etc/systemd/system/${app_name}.service
+env_file = /etc/default/${app_name}
+logrotate_file = /etc/logrotate.d/${app_name}
+
 # Backup settings
 backup_dir = /tmp/${app_name}_backup
 EOF
